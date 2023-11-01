@@ -51,22 +51,22 @@ class DataLoaderS(object):
 
     def _split(self, train, valid, test):
 
-        train_set = range(self.P + self.h - 1, train)
-        valid_set = range(train, valid)
-        test_set = range(valid, self.n)
+        train_set = range(self.P + self.h - 1, train) #(168+3-1) - 60
+        valid_set = range(train, valid) #60 - 80
+        test_set = range(valid, self.n) #80 - 100
         self.train = self._batchify(train_set, self.h)
         self.valid = self._batchify(valid_set, self.h)
         self.test = self._batchify(test_set, self.h)
 
     def _batchify(self, idx_set, horizon):
         n = len(idx_set)
-        X = torch.zeros((n, self.P, self.m))
-        Y = torch.zeros((n, self.m))
-        for i in range(n):
+        X = torch.zeros((n, self.P, self.m)) #p.e. train_set x 168 x 321 (num ejemplos x tam ventana x num caracteristicas)
+        Y = torch.zeros((n, self.m)) #p.e. train_set x 321 (num ejemplos x num caracteristicas)
+        for i in range(n): #Para cada ejemplo del lote
             end = idx_set[i] - self.h + 1
             start = end - self.P
-            X[i, :, :] = torch.from_numpy(self.dat[start:end, :])
-            Y[i, :] = torch.from_numpy(self.dat[idx_set[i], :])
+            X[i, :, :] = torch.from_numpy(self.dat[start:end, :]) #copia datos de entrada originales al i-esimo ejemplo del lote
+            Y[i, :] = torch.from_numpy(self.dat[idx_set[i], :]) #copia datos de salida originales
         return [X, Y]
 
     def get_batches(self, inputs, targets, batch_size, shuffle=True):

@@ -214,7 +214,7 @@ if __name__ == "__main__":
     acc = []
     rae = []
     corr = []
-    for i in range(10):
+    for i in range(3):
         val_acc, val_rae, val_corr, test_acc, test_rae, test_corr = main()
         vacc.append(val_acc)
         vrae.append(val_rae)
@@ -223,7 +223,7 @@ if __name__ == "__main__":
         rae.append(test_rae)
         corr.append(test_corr)
     print('\n\n')
-    print('10 runs average')
+    print('3 runs average')
     print('\n\n')
     print("valid\trse\trae\tcorr")
     print("mean\t{:5.4f}\t{:5.4f}\t{:5.4f}".format(np.mean(vacc), np.mean(vrae), np.mean(vcorr)))

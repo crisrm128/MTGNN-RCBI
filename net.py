@@ -18,13 +18,13 @@ class gtnet(nn.Module):
         self.norm = nn.ModuleList()
         self.start_conv = nn.Conv2d(in_channels=in_dim,
                                     out_channels=residual_channels,
-                                    kernel_size=(1, 1))
-        self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
+                                    kernel_size=(1, 1)) #Convolucion 1D para adecuar las dimensiones
+        self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat) #Graph learning layer
 
         self.seq_length = seq_length
         kernel_size = 7
         if dilation_exponential>1:
-            self.receptive_field = int(1+(kernel_size-1)*(dilation_exponential**layers-1)/(dilation_exponential-1))
+            self.receptive_field = int(1+(kernel_size-1)*(dilation_exponential**layers-1)/(dilation_exponential-1)) #Formula del paper
         else:
             self.receptive_field = layers*(kernel_size-1) + 1
 
@@ -40,22 +40,22 @@ class gtnet(nn.Module):
                 else:
                     rf_size_j = rf_size_i+j*(kernel_size-1)
 
-                self.filter_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation))
-                self.gate_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation))
+                self.filter_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation)) #TC Module tanh
+                self.gate_convs.append(dilated_inception(residual_channels, conv_channels, dilation_factor=new_dilation)) #TC Module sigmoid
                 self.residual_convs.append(nn.Conv2d(in_channels=conv_channels,
                                                     out_channels=residual_channels,
-                                                 kernel_size=(1, 1)))
+                                                 kernel_size=(1, 1))) #Residual connections
                 if self.seq_length>self.receptive_field:
                     self.skip_convs.append(nn.Conv2d(in_channels=conv_channels,
-                                                    out_channels=skip_channels,
-                                                    kernel_size=(1, self.seq_length-rf_size_j+1)))
+                                                    out_channels=skip_channels, 
+                                                    kernel_size=(1, self.seq_length-rf_size_j+1))) #Skip connections
                 else:
                     self.skip_convs.append(nn.Conv2d(in_channels=conv_channels,
                                                     out_channels=skip_channels,
                                                     kernel_size=(1, self.receptive_field-rf_size_j+1)))
 
                 if self.gcn_true:
-                    self.gconv1.append(mixprop(conv_channels, residual_channels, gcn_depth, dropout, propalpha))
+                    self.gconv1.append(mixprop(conv_channels, residual_channels, gcn_depth, dropout, propalpha)) #GC Module
                     self.gconv2.append(mixprop(conv_channels, residual_channels, gcn_depth, dropout, propalpha))
 
                 if self.seq_length>self.receptive_field:
@@ -73,7 +73,7 @@ class gtnet(nn.Module):
         self.end_conv_2 = nn.Conv2d(in_channels=end_channels,
                                              out_channels=out_dim,
                                              kernel_size=(1,1),
-                                             bias=True)
+                                             bias=True) #Output module
         if self.seq_length > self.receptive_field:
             self.skip0 = nn.Conv2d(in_channels=in_dim, out_channels=skip_channels, kernel_size=(1, self.seq_length), bias=True)
             self.skipE = nn.Conv2d(in_channels=residual_channels, out_channels=skip_channels, kernel_size=(1, self.seq_length-self.receptive_field+1), bias=True)
@@ -104,23 +104,23 @@ class gtnet(nn.Module):
             else:
                 adp = self.predefined_A
 
-        x = self.start_conv(input)
+        x = self.start_conv(input) #Input module
         skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
         for i in range(self.layers):
-            residual = x
-            filter = self.filter_convs[i](x)
-            filter = torch.tanh(filter)
-            gate = self.gate_convs[i](x)
-            gate = torch.sigmoid(gate)
-            x = filter * gate
+            residual = x #Residual connections
+            filter = self.filter_convs[i](x) #TC Module
+            filter = torch.tanh(filter) #TC Module
+            gate = self.gate_convs[i](x) #TC Module
+            gate = torch.sigmoid(gate) #TC Module
+            x = filter * gate #TC Module final
             x = F.dropout(x, self.dropout, training=self.training)
             s = x
-            s = self.skip_convs[i](s)
+            s = self.skip_convs[i](s) #Skip connections
             skip = s + skip
             if self.gcn_true:
-                x = self.gconv1[i](x, adp)+self.gconv2[i](x, adp.transpose(1,0))
+                x = self.gconv1[i](x, adp)+self.gconv2[i](x, adp.transpose(1,0)) #GC Module
             else:
-                x = self.residual_convs[i](x)
+                x = self.residual_convs[i](x) #Residual connections
 
             x = x + residual[:, :, :, -x.size(3):]
             if idx is None:
@@ -131,5 +131,5 @@ class gtnet(nn.Module):
         skip = self.skipE(x) + skip
         x = F.relu(skip)
         x = F.relu(self.end_conv_1(x))
-        x = self.end_conv_2(x)
+        x = self.end_conv_2(x) #Output module
         return x
