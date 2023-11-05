@@ -20,6 +20,7 @@ class gtnet(nn.Module):
                                     out_channels=residual_channels,
                                     kernel_size=(1, 1)) #Convolucion 1D para adecuar las dimensiones
         self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat) #Graph learning layer
+        self.adjacency_matrix = None  # Variable to store the adjacency matrix
 
         self.seq_length = seq_length
         kernel_size = 7
@@ -103,6 +104,7 @@ class gtnet(nn.Module):
                     adp = self.gc(idx)
             else:
                 adp = self.predefined_A
+            self.adjacency_matrix = adp  # Save the learned adjacency matrix
 
         x = self.start_conv(input) #Input module
         skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
