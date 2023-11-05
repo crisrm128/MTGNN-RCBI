@@ -189,8 +189,8 @@ def main():
                 best_val = val_loss
             
             # Para guardar la matriz de adyacencia
-            if model.gc.adjacency_matrix is not None:
-                np.save('learned_adjacency_matrix.npy', model.gc.adjacency_matrix.cpu().detach().numpy())
+            if model.adjacency_matrix is not None:
+                np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
 
             if epoch % 5 == 0:
                 test_acc, test_rae, test_corr = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
