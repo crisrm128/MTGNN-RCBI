@@ -176,13 +176,11 @@ def main():
         for epoch in range(1, args.epochs + 1):
             epoch_start_time = time.time()
             train_loss = train(Data, Data.train[0], Data.train[1], model, criterion, optim, args.batch_size)
-            val_loss, val_rae, val_corr, val_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
+            val_loss, val_rae, val_corr = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
                                                args.batch_size)
             print(
                 '| end of epoch {:3d} | time: {:5.2f}s | train_loss {:5.4f} | valid rse {:5.4f} | valid rae {:5.4f} | valid corr  {:5.4f}'.format(
                     epoch, (time.time() - epoch_start_time), train_loss, val_loss, val_rae, val_corr), flush=True)
-            print('Valid predictions: ', val_predict)
-            print('Valid predictions shape: ', val_predict.shape)
             # Save the model if the validation loss is the best we've seen so far.
 
             if val_loss < best_val:
@@ -194,10 +192,12 @@ def main():
             if model.adjacency_matrix is not None:
                 np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
 
-            if epoch % 5 == 0:
-                test_acc, test_rae, test_corr = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
+            #if epoch % 5 == 0:
+            test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
                                                      args.batch_size)
-                print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
+            print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
+            print('Valid predictions: ', test_predict)
+            print('Valid predictions shape: ', test_predict.shape)
 
     except KeyboardInterrupt:
         print('-' * 89)
