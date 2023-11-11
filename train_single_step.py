@@ -52,7 +52,7 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     index = (sigma_g != 0)
     correlation = ((predict - mean_p) * (Ytest - mean_g)).mean(axis=0) / (sigma_p * sigma_g)
     correlation = (correlation[index]).mean()
-    return rse, rae, correlation
+    return rse, rae, correlation, predict
 
 
 def train(data, X, Y, model, criterion, optim, batch_size):
@@ -176,11 +176,12 @@ def main():
         for epoch in range(1, args.epochs + 1):
             epoch_start_time = time.time()
             train_loss = train(Data, Data.train[0], Data.train[1], model, criterion, optim, args.batch_size)
-            val_loss, val_rae, val_corr = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
+            val_loss, val_rae, val_corr, val_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
                                                args.batch_size)
             print(
                 '| end of epoch {:3d} | time: {:5.2f}s | train_loss {:5.4f} | valid rse {:5.4f} | valid rae {:5.4f} | valid corr  {:5.4f}'.format(
                     epoch, (time.time() - epoch_start_time), train_loss, val_loss, val_rae, val_corr), flush=True)
+            print('Valid predictions: ', val_predict)
             # Save the model if the validation loss is the best we've seen so far.
 
             if val_loss < best_val:
