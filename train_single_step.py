@@ -10,6 +10,7 @@ import importlib
 
 from util import *
 from trainer import Optim
+from sklearn.model_selection import KFold, train_test_split
 
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
@@ -136,14 +137,55 @@ parser.add_argument('--step_size',type=int,default=100,help='step_size')
 
 parser.add_argument('--exp_num',type=int, default=3, help='number of runs/experiments')
 parser.add_argument('--kfold', type=bool, default=False, help='usage of k-fold cross validation')
-parser.add_argument('--folds', type=int, default=3, help='number of folds for k-fold cross val')
 
 args = parser.parse_args()
 device = torch.device(args.device)
 torch.set_num_threads(3)
 
-def main_training(Data):
-    
+def main():
+    fin = open(args.data)
+    data = np.loadtxt(fin, delimiter=',')
+
+    if args.kfold:
+        num_folds = 5
+        num_clients = data.shape[1]
+        client_indices = list(range(num_clients))
+        
+        kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+
+        # Iterar sobre las divisiones de la validación cruzada
+        for fold, (train_val_indices, test_indices) in enumerate(kf.split(client_indices)):
+            # Dividir los índices de train_val en conjuntos de entrenamiento y validación
+            train_indices, val_indices = train_test_split(train_val_indices, train_size=192, test_size=64, random_state=42)
+
+            # Ajustar los porcentajes a 60% entrenamiento, 20% validación, 20% prueba
+            train_percentage = 0.6
+            val_percentage = 0.2
+            test_percentage = 1 - train_percentage - val_percentage
+
+            # Ajustar tamaños de los conjuntos en función de los porcentajes
+            num_train = int(train_percentage * num_clients)
+            num_val = int(val_percentage * num_clients)
+            num_test = num_clients - num_train - num_val
+
+            # Seleccionar las columnas correspondientes a los conjuntos de entrenamiento, validación y prueba
+            train_subset = data[:, train_indices[:num_train]]
+            val_subset = data[:, val_indices[:num_val]]
+            test_subset = data[:, test_indices[:num_test]]
+
+            print(train_subset.shape)
+            print(train_indices[:num_train])
+            print(val_subset.shape)
+            print(val_indices[:num_val])
+            print(test_subset.shape)
+            print(test_indices[:num_test])
+
+            #print(f'Fold {fold + 1} - Porcentaje de entrenamiento: {train_percentage * 100:.2f}%, Porcentaje de validación: {val_percentage * 100:.2f}%, Porcentaje de test: {test_percentage * 100:.2f}%')
+
+        
+
+    Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
+
     model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes,
                   device, dropout=args.dropout, subgraph_size=args.subgraph_size,
                   node_dim=args.node_dim, dilation_exponential=args.dilation_exponential,
@@ -227,20 +269,6 @@ def main_training(Data):
                                          args.batch_size)
     print("final test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
     return vtest_acc, vtest_rae, vtest_corr, test_acc, test_rae, test_corr
-
-def main():
-
-
-    if args.kfold:
-        Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
-        print(Data)
-
-
-    else:
-        Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
-        return main_training(Data)
-
-    
 
 if __name__ == "__main__":
     vacc = []
