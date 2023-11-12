@@ -11,11 +11,17 @@ def normal_std(x):
 
 class DataLoaderS(object):
     # train and valid is the ratio of training set and validation set. test = 1 - train - valid
-    def __init__(self, file_name, train, valid, device, horizon, window, normalize=2):
+    def __init__(self, file_name, train, valid, device, horizon, window, sensitivity, data=None, normalize=2):
         self.P = window
         self.h = horizon
         fin = open(file_name)
-        self.rawdat = np.loadtxt(fin, delimiter=',')
+        
+        if sensitivity:
+            self.rawdat = data
+            print("Modificado")           
+        else:
+            self.rawdat = np.loadtxt(fin, delimiter=',')
+        
         self.dat = np.zeros(self.rawdat.shape)
         self.n, self.m = self.dat.shape
         self.normalize = 2
