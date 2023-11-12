@@ -135,16 +135,15 @@ parser.add_argument('--num_split',type=int,default=1,help='number of splits for 
 parser.add_argument('--step_size',type=int,default=100,help='step_size')
 
 parser.add_argument('--exp_num',type=int, default=3, help='number of runs/experiments')
-
+parser.add_argument('--kfold', type=bool, default=False, help='usage of k-fold cross validation')
+parser.add_argument('--folds', type=int, default=3, help='number of folds for k-fold cross val')
 
 args = parser.parse_args()
 device = torch.device(args.device)
 torch.set_num_threads(3)
 
-def main():
-
-    Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
-
+def main_training(Data):
+    
     model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes,
                   device, dropout=args.dropout, subgraph_size=args.subgraph_size,
                   node_dim=args.node_dim, dilation_exponential=args.dilation_exponential,
@@ -228,6 +227,16 @@ def main():
                                          args.batch_size)
     print("final test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
     return vtest_acc, vtest_rae, vtest_corr, test_acc, test_rae, test_corr
+
+def main():
+
+    if args.kfold:
+        print(args.folds)
+    else:
+        Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
+        return main_training(Data)
+
+    
 
 if __name__ == "__main__":
     vacc = []
