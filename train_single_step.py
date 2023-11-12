@@ -201,8 +201,9 @@ def main():
             confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
             interval_differences = confidence_interval[1] - confidence_interval[0]
             confidence_interval = np.vstack([confidence_interval, interval_differences])
-            
-            print(confidence_interval)
+            average_interval_size = np.mean(interval_differences)
+            print("Tamaño promedio de los intervalos de confianza:", average_interval_size)
+
             output_file = "predict_confinterv_result.csv"
             output_format = '%.3f'
             np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
