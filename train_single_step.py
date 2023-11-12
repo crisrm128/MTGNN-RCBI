@@ -195,7 +195,17 @@ def main():
             #if epoch % 5 == 0:
             test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
                                                      args.batch_size)
+            
             test_predict = test_predict * Data.scale.cpu().numpy()
+            
+            confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
+            interval_differences = confidence_interval[1] - confidence_interval[0]
+            confidence_interval = np.vstack([confidence_interval, interval_differences])
+            
+            output_file = "predict_confinterv_result.csv"
+            output_format = '%.3f'
+            np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
+            
             print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
             print('Test predictions: ', test_predict)
             print('Test predictions shape: ', test_predict.shape)
