@@ -10,8 +10,8 @@ import importlib
 
 from util import *
 from trainer import Optim
-from sklearn.model_selection import KFold, train_test_split
 
+np.random.seed(42)
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     model.eval()
@@ -136,139 +136,116 @@ parser.add_argument('--num_split',type=int,default=1,help='number of splits for 
 parser.add_argument('--step_size',type=int,default=100,help='step_size')
 
 parser.add_argument('--exp_num',type=int, default=3, help='number of runs/experiments')
-parser.add_argument('--kfold', type=bool, default=False, help='usage of k-fold cross validation')
+parser.add_argument('--sensitivity', type=bool, default=False, help='usage of sensitivity analysis')
 
 args = parser.parse_args()
 device = torch.device(args.device)
 torch.set_num_threads(3)
 
 def main():
-    fin = open(args.data)
-    data = np.loadtxt(fin, delimiter=',')
 
-    if args.kfold:
-        num_folds = 5
+    if args.sensitivity:
+        fin = open(args.data)
+        data = np.loadtxt(fin, delimiter=',')
+
         num_clients = data.shape[1]
-        client_indices = list(range(num_clients))
+        random_client_index = np.random.randint(0, num_clients) # Selecciona aleatoriamente un índice de cliente
         
-        kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+        random_client_data = data[:, random_client_index] # Selecciona la columna correspondiente al cliente aleatorio
+        random_client_data = np.random.rand(data.shape[0]) # Modifica los valores de la columna con valores aleatorios
 
-        # Iterar sobre las divisiones de la validación cruzada
-        for fold, (train_val_indices, test_indices) in enumerate(kf.split(client_indices)):
-            # Dividir los índices de train_val en conjuntos de entrenamiento y validación
-            train_indices, val_indices = train_test_split(train_val_indices, train_size=192, test_size=64, random_state=42)
+        data[:, random_client_index] = random_client_data # Actualiza la columna en 'data'
 
-            # Ajustar los porcentajes a 60% entrenamiento, 20% validación, 20% prueba
-            train_percentage = 0.6
-            val_percentage = 0.2
-            test_percentage = 1 - train_percentage - val_percentage
-
-            # Ajustar tamaños de los conjuntos en función de los porcentajes
-            num_train = int(train_percentage * num_clients)
-            num_val = int(val_percentage * num_clients)
-            num_test = num_clients - num_train - num_val
-
-            # Seleccionar las columnas correspondientes a los conjuntos de entrenamiento, validación y prueba
-            train_subset = data[:, train_indices[:num_train]]
-            val_subset = data[:, val_indices[:num_val]]
-            test_subset = data[:, test_indices[:num_test]]
-
-            print(train_subset.shape)
-            print(train_indices[:num_train])
-            print(val_subset.shape)
-            print(val_indices[:num_val])
-            print(test_subset.shape)
-            print(test_indices[:num_test])
-
-            #print(f'Fold {fold + 1} - Porcentaje de entrenamiento: {train_percentage * 100:.2f}%, Porcentaje de validación: {val_percentage * 100:.2f}%, Porcentaje de test: {test_percentage * 100:.2f}%')
-
-        
-
-    Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
-
-    model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes,
-                  device, dropout=args.dropout, subgraph_size=args.subgraph_size,
-                  node_dim=args.node_dim, dilation_exponential=args.dilation_exponential,
-                  conv_channels=args.conv_channels, residual_channels=args.residual_channels,
-                  skip_channels=args.skip_channels, end_channels= args.end_channels,
-                  seq_length=args.seq_in_len, in_dim=args.in_dim, out_dim=args.seq_out_len,
-                  layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=False)
-    model = model.to(device)
-
-    print(args)
-    print('The recpetive field size is', model.receptive_field)
-    nParams = sum([p.nelement() for p in model.parameters()])
-    print('Number of model parameters is', nParams, flush=True)
-
-    if args.L1Loss:
-        criterion = nn.L1Loss(size_average=False).to(device)
+        print("cliente modificado: ", random_client_index)
+        print("columna modificada: ", random_client_data)
+    
     else:
-        criterion = nn.MSELoss(size_average=False).to(device)
-    evaluateL2 = nn.MSELoss(size_average=False).to(device)
-    evaluateL1 = nn.L1Loss(size_average=False).to(device)
+
+        Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
+
+        model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes,
+                    device, dropout=args.dropout, subgraph_size=args.subgraph_size,
+                    node_dim=args.node_dim, dilation_exponential=args.dilation_exponential,
+                    conv_channels=args.conv_channels, residual_channels=args.residual_channels,
+                    skip_channels=args.skip_channels, end_channels= args.end_channels,
+                    seq_length=args.seq_in_len, in_dim=args.in_dim, out_dim=args.seq_out_len,
+                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=False)
+        model = model.to(device)
+
+        print(args)
+        print('The recpetive field size is', model.receptive_field)
+        nParams = sum([p.nelement() for p in model.parameters()])
+        print('Number of model parameters is', nParams, flush=True)
+
+        if args.L1Loss:
+            criterion = nn.L1Loss(size_average=False).to(device)
+        else:
+            criterion = nn.MSELoss(size_average=False).to(device)
+        evaluateL2 = nn.MSELoss(size_average=False).to(device)
+        evaluateL1 = nn.L1Loss(size_average=False).to(device)
 
 
-    best_val = 10000000
-    optim = Optim(
-        model.parameters(), args.optim, args.lr, args.clip, lr_decay=args.weight_decay
-    )
+        best_val = 10000000
+        optim = Optim(
+            model.parameters(), args.optim, args.lr, args.clip, lr_decay=args.weight_decay
+        )
 
-    # At any point you can hit Ctrl + C to break out of training early.
-    try:
-        print('begin training')
-        for epoch in range(1, args.epochs + 1):
-            epoch_start_time = time.time()
-            train_loss = train(Data, Data.train[0], Data.train[1], model, criterion, optim, args.batch_size)
-            val_loss, val_rae, val_corr, val_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
-                                               args.batch_size)
-            print(
-                '| end of epoch {:3d} | time: {:5.2f}s | train_loss {:5.4f} | valid rse {:5.4f} | valid rae {:5.4f} | valid corr  {:5.4f}'.format(
-                    epoch, (time.time() - epoch_start_time), train_loss, val_loss, val_rae, val_corr), flush=True)
-            # Save the model if the validation loss is the best we've seen so far.
+        # At any point you can hit Ctrl + C to break out of training early.
+        try:
+            print('begin training')
+            for epoch in range(1, args.epochs + 1):
+                epoch_start_time = time.time()
+                train_loss = train(Data, Data.train[0], Data.train[1], model, criterion, optim, args.batch_size)
+                val_loss, val_rae, val_corr, val_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
+                                                args.batch_size)
+                print(
+                    '| end of epoch {:3d} | time: {:5.2f}s | train_loss {:5.4f} | valid rse {:5.4f} | valid rae {:5.4f} | valid corr  {:5.4f}'.format(
+                        epoch, (time.time() - epoch_start_time), train_loss, val_loss, val_rae, val_corr), flush=True)
+                # Save the model if the validation loss is the best we've seen so far.
 
-            if val_loss < best_val:
-                with open(args.save, 'wb') as f:
-                    torch.save(model, f)
-                best_val = val_loss
-            
-            # Para guardar la matriz de adyacencia
-            if model.adjacency_matrix is not None:
-                np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
+                if val_loss < best_val:
+                    with open(args.save, 'wb') as f:
+                        torch.save(model, f)
+                    best_val = val_loss
+                
+                # Para guardar la matriz de adyacencia
+                if model.adjacency_matrix is not None:
+                    np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
 
-            #if epoch % 5 == 0:
-            test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
-                                                     args.batch_size)
-            
-            test_predict = test_predict * Data.scale.cpu().numpy()
-            
-            confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
-            interval_differences = confidence_interval[1] - confidence_interval[0]
-            confidence_interval = np.vstack([confidence_interval, interval_differences])
-            average_interval_size = np.mean(interval_differences)
-            print("Tamaño promedio de los intervalos de confianza:", average_interval_size)
+                #if epoch % 5 == 0:
+                test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
+                                                        args.batch_size)
+                
+                test_predict = test_predict * Data.scale.cpu().numpy()
+                
+                confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
+                interval_differences = confidence_interval[1] - confidence_interval[0]
+                confidence_interval = np.vstack([confidence_interval, interval_differences])
+                average_interval_size = np.mean(interval_differences)
+                print("Tamaño promedio de los intervalos de confianza:", average_interval_size)
 
-            output_file = "predict_confinterv_result.csv"
-            output_format = '%.3f'
-            np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
-            
-            print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
-            print('Test predictions: ', test_predict)
-            print('Test predictions shape: ', test_predict.shape)
+                output_file = "predict_confinterv_result.csv"
+                output_format = '%.3f'
+                np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
+                
+                print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
+                print('Test predictions: ', test_predict)
+                print('Test predictions shape: ', test_predict.shape)
 
-    except KeyboardInterrupt:
-        print('-' * 89)
-        print('Exiting from training early')
+        except KeyboardInterrupt:
+            print('-' * 89)
+            print('Exiting from training early')
 
-    # Load the best saved model.
-    with open(args.save, 'rb') as f:
-        model = torch.load(f)
+        # Load the best saved model.
+        with open(args.save, 'rb') as f:
+            model = torch.load(f)
 
-    vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
-                                         args.batch_size)
-    test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
-                                         args.batch_size)
-    print("final test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
-    return vtest_acc, vtest_rae, vtest_corr, test_acc, test_rae, test_corr
+        vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
+                                            args.batch_size)
+        test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
+                                            args.batch_size)
+        print("final test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
+        return vtest_acc, vtest_rae, vtest_corr, test_acc, test_rae, test_corr
 
 if __name__ == "__main__":
     vacc = []
