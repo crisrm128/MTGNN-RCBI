@@ -248,7 +248,7 @@ def main():
 
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.sensitivity, data, args.normalize)
 
-        #return main_training(Data)
+        return main_training(Data)
 
     else:
 
