@@ -195,7 +195,7 @@ def main():
             #if epoch % 5 == 0:
             test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
                                                      args.batch_size)
-            test_predict = test_predict * Data.scale.numpy()
+            test_predict = test_predict * Data.scale.cpu().numpy()
             print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
             print('Test predictions: ', test_predict)
             print('Test predictions shape: ', test_predict.shape)
