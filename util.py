@@ -29,8 +29,9 @@ class DataLoaderS(object):
         # print("Tmp: ", tmp)
         # print("Tmp shape: ", tmp.shape)
         print(f"train shape: {len(self.train)} {len(self.train[0])}")
-        print(f"train shape: {len(self.valid)} {len(self.valid[0])}")
-        print(f"train shape: {len(self.test)} {len(self.test[0])}")
+        print(f"valid shape: {len(self.valid)} {len(self.valid[0])}")
+        print(f"test shape: {len(self.test)} {len(self.test[0])}")
+        print(self.test)
 
         self.scale = self.scale.to(device)
         self.scale = Variable(self.scale)
