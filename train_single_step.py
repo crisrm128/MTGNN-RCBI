@@ -11,8 +11,6 @@ import importlib
 from util import *
 from trainer import Optim
 
-from sklearn.model_selection import KFold, train_test_split
-
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     model.eval()
@@ -232,35 +230,11 @@ def main_training(Data):
 
 def main():
 
+
     if args.kfold:
-        num_clients = args.data.shape[1]
-        client_indices = list(range(num_clients))
+        Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
+        print(Data)
 
-        num_splits = 3  # Número de divisiones en la validación cruzada
-        kf = KFold(n_splits=num_splits, shuffle=True, random_state=42)
-
-        # Iterar sobre las divisiones de la validación cruzada
-        for fold, (train_val_indices, test_indices) in enumerate(kf.split(client_indices)):
-            # Dividir los índices de train_val en conjuntos de entrenamiento y validación
-            train_indices, val_indices = train_test_split(train_val_indices, test_size=0.2, random_state=42)
-
-            # Seleccionar las columnas correspondientes a los conjuntos de entrenamiento, validación y prueba
-            train_subset = args.data[:, train_indices]
-            val_subset = args.data[:, val_indices]
-            test_subset = args.data[:, test_indices]
-
-            print(train_subset.shape)
-            print(train_indices)
-            print(val_subset.shape)
-            print(val_indices)
-            print(test_subset.shape)
-            print(test_indices)
-
-            train_percentage = len(train_indices) / num_clients
-            val_percentage = len(val_indices) / num_clients
-            test_percentage = len(test_indices) / num_clients
-
-            print(f'Fold {fold + 1} - Porcentaje de entrenamiento: {train_percentage * 100:.2f}%, Porcentaje de validación: {val_percentage * 100:.2f}%, Porcentaje de test: {val_percentage * 100:.2f}%')
 
     else:
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.normalize)
