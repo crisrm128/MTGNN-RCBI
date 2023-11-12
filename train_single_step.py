@@ -152,7 +152,9 @@ def main():
         random_client_index = np.random.randint(0, num_clients) # Selecciona aleatoriamente un índice de cliente
         
         random_client_data = data[:, random_client_index] # Selecciona la columna correspondiente al cliente aleatorio
-        random_client_data = np.random.rand(data.shape[0]) # Modifica los valores de la columna con valores aleatorios
+        min_value = np.min(random_client_data)
+        max_value = np.max(random_client_data)
+        random_client_data = np.random.uniform(min_value, max_value, size=data.shape[0]) # Modifica los valores de la columna con valores aleatorios
 
         data[:, random_client_index] = random_client_data # Actualiza la columna en 'data'
 
