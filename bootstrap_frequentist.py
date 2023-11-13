@@ -33,6 +33,10 @@ confidence_interval = np.vstack([confidence_interval, interval_differences])
 count_greater_than_100 = np.sum(interval_differences > 100)
 print("Cantidad de variables con diferencia mayor a 100:", count_greater_than_100)
 
+# Obtener los índices de las variables con diferencia mayor a 100
+indices_mayor_a_100 = np.where(interval_differences > 100)[0]
+print("Índices de variables con diferencia mayor a 100:", indices_mayor_a_100)
+
 # Calcula el tamaño promedio de los intervalos de confianza (si es elevado significa que hay mucha incertidumbre)
 average_interval_size = np.mean(interval_differences)
 print("Tamaño promedio de los intervalos de confianza:", average_interval_size)
@@ -43,7 +47,7 @@ filtered_differences = interval_differences[interval_differences < 100]
 average_interval_size_filtered = np.mean(filtered_differences)
 print("Tamaño promedio de los intervalos de confianza menores a 100:", average_interval_size_filtered)
 
-# Calcular la demanda promedio de cada cliente (promedio a lo largo de las filas)
+# Calcular la demanda promedio de cada cliente (promedio a lo largo de las filas), para comparar con los intervalos de confianza
 demanda_promedio_por_cliente = np.mean(data, axis=0)
 demanda_promedio_por_cliente = np.round(demanda_promedio_por_cliente, 3)
 
