@@ -16,9 +16,9 @@ class DataLoaderS(object):
         self.h = horizon
         fin = open(file_name)
         
+        # If sensitivity analysis enabled, then use data with columns modified randomly
         if sensitivity:
-            self.rawdat = data
-            print("Modificado")           
+            self.rawdat = data        
         else:
             self.rawdat = np.loadtxt(fin, delimiter=',')
         
@@ -32,6 +32,7 @@ class DataLoaderS(object):
         self.scale = torch.from_numpy(self.scale).float()
         tmp = self.test[1] * self.scale.expand(self.test[1].size(0), self.m)
 
+        # For debugging:
         # print("Tmp: ", tmp)
         # print("Tmp shape: ", tmp.shape)
         # print(f"train shape: {len(self.train)} {len(self.train[0])}")
@@ -56,7 +57,7 @@ class DataLoaderS(object):
         if (normalize == 1):
             self.dat = self.rawdat / np.max(self.rawdat)
 
-        # normlized by the maximum value of each row(sensor).
+        # normalized by the maximum value of each row(sensor).
         if (normalize == 2):
             for i in range(self.m):
                 self.scale[i] = np.max(np.abs(self.rawdat[:, i]))
@@ -64,22 +65,22 @@ class DataLoaderS(object):
 
     def _split(self, train, valid, test):
 
-        train_set = range(self.P + self.h - 1, train) #(168+3-1) - 60
-        valid_set = range(train, valid) #60 - 80
-        test_set = range(valid, self.n) #80 - 100
+        train_set = range(self.P + self.h - 1, train) #(168+3-1) - 0.6*26304
+        valid_set = range(train, valid) #0.6*26304 - 0.8*26304
+        test_set = range(valid, self.n) #0.8*26304 - 26304
         self.train = self._batchify(train_set, self.h)
         self.valid = self._batchify(valid_set, self.h)
         self.test = self._batchify(test_set, self.h)
 
     def _batchify(self, idx_set, horizon):
         n = len(idx_set)
-        X = torch.zeros((n, self.P, self.m)) #p.e. train_set x 168 x 321 (num ejemplos x tam ventana x num caracteristicas)
-        Y = torch.zeros((n, self.m)) #p.e. train_set x 321 (num ejemplos x num caracteristicas)
-        for i in range(n): #Para cada ejemplo del lote
+        X = torch.zeros((n, self.P, self.m)) #for example train_set x 168 x 321 (samples number x window size x clients number)
+        Y = torch.zeros((n, self.m)) #for example train_set x 321 (samples number x clients number)
+        for i in range(n): #For every sample in the batch
             end = idx_set[i] - self.h + 1
             start = end - self.P
-            X[i, :, :] = torch.from_numpy(self.dat[start:end, :]) #copia datos de entrada originales al i-esimo ejemplo del lote
-            Y[i, :] = torch.from_numpy(self.dat[idx_set[i], :]) #copia datos de salida originales
+            X[i, :, :] = torch.from_numpy(self.dat[start:end, :]) #Copy of the original input data to the i example of the batch
+            Y[i, :] = torch.from_numpy(self.dat[idx_set[i], :]) 
         return [X, Y]
 
     def get_batches(self, inputs, targets, batch_size, shuffle=True):

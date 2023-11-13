@@ -92,7 +92,7 @@ def train(data, X, Y, model, criterion, optim, batch_size):
         iter += 1
     return total_loss / n_samples
 
-
+# Input arguments
 parser = argparse.ArgumentParser(description='PyTorch Time series forecasting')
 parser.add_argument('--data', type=str, default='./data/solar_AL.txt',
                     help='location of the data file')
@@ -142,6 +142,7 @@ args = parser.parse_args()
 device = torch.device(args.device)
 torch.set_num_threads(3)
 
+# Function that performs the original training within the main function. Now adjusted for the sensitivity analysis.
 def main_training(Data):
     model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes,
                     device, dropout=args.dropout, subgraph_size=args.subgraph_size,
@@ -188,29 +189,33 @@ def main_training(Data):
                     torch.save(model, f)
                 best_val = val_loss
             
-            # Para guardar la matriz de adyacencia
+            # To save the adjacency matrix in a file
             if model.adjacency_matrix is not None:
                 np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
 
-            #if epoch % 5 == 0:
-            test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
-                                                    args.batch_size)
-            
-            test_predict = test_predict * Data.scale.cpu().numpy()
-            
-            confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
-            interval_differences = confidence_interval[1] - confidence_interval[0]
-            confidence_interval = np.vstack([confidence_interval, interval_differences])
-            average_interval_size = np.mean(interval_differences)
-            print("Tamaño promedio de los intervalos de confianza:", average_interval_size)
+            if epoch % 3 == 0: # Changed from 5 to 3
+                # Monitoring purposes
+                test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
+                                                        args.batch_size)
+                
+                test_predict = test_predict * Data.scale.cpu().numpy() # Rescale from normalizing
+                
+                confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
+                interval_differences = confidence_interval[1] - confidence_interval[0]
+                confidence_interval = np.vstack([confidence_interval, interval_differences])
+                average_interval_size = np.mean(interval_differences)
+                print("Average size for confidence intervals:", average_interval_size)
 
-            output_file = "predict_confinterv_result.csv"
-            output_format = '%.3f'
-            np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
-            
-            print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
-            print('Test predictions: ', test_predict)
-            print('Test predictions shape: ', test_predict.shape)
+                if args.sensitivity:
+                    output_file = "predict_confinterv_result_sensitivity.csv"
+                else:
+                    output_file = "predict_confinterv_result.csv"
+                output_format = '%.3f'
+                np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
+                
+                print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
+                #print('Test predictions: ', test_predict)
+                #print('Test predictions shape: ', test_predict.shape)
 
     except KeyboardInterrupt:
         print('-' * 89)
@@ -220,6 +225,7 @@ def main_training(Data):
     with open(args.save, 'rb') as f:
         model = torch.load(f)
 
+    # Evaluate both sets with the best saved model.
     vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
                                         args.batch_size)
     test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
@@ -234,27 +240,26 @@ def main():
         data = np.loadtxt(fin, delimiter=',')
 
         num_clients = data.shape[1]
-        random_client_index = np.random.randint(0, num_clients) # Selecciona aleatoriamente un índice de cliente
+        random_client_index = np.random.randint(0, num_clients) # Select a random index as the chosen client
         
-        random_client_data = data[:, random_client_index] # Selecciona la columna correspondiente al cliente aleatorio
+        random_client_data = data[:, random_client_index] # Select the corresponding column of the random client
         min_value = np.min(random_client_data)
         max_value = np.max(random_client_data)
-        random_client_data = np.random.uniform(min_value, max_value, size=data.shape[0]) # Modifica los valores de la columna con valores aleatorios
+        random_client_data = np.random.uniform(min_value, max_value, size=data.shape[0]) # Modify the column values with random values in a uniform distribution
 
-        data[:, random_client_index] = random_client_data # Actualiza la columna en 'data'
+        data[:, random_client_index] = random_client_data # Update the new column in 'data'
 
-        print("cliente modificado: ", random_client_index)
-        print("columna modificada: ", random_client_data)
+        print("Modified client: ", random_client_index)
+        #print("Modified column: ", random_client_data)
 
+        # Create the train, validation and test sets with the new data
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.sensitivity, data, args.normalize)
 
-        return main_training(Data)
-
     else:
-
+        # Original 
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.sensitivity, args.normalize)
 
-        return main_training(Data)
+    return main_training(Data)
 
         
 
