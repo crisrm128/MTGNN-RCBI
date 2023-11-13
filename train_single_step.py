@@ -137,6 +137,7 @@ parser.add_argument('--step_size',type=int,default=100,help='step_size')
 
 parser.add_argument('--exp_num',type=int, default=3, help='number of runs/experiments')
 parser.add_argument('--sensitivity', type=bool, default=False, help='usage of sensitivity analysis')
+parser.add_argument('--sensitivity_num', type=int, default=1, help='number of variables used for sensitivity analysis')
 
 args = parser.parse_args()
 device = torch.device(args.device)
@@ -240,17 +241,19 @@ def main():
         data = np.loadtxt(fin, delimiter=',')
 
         num_clients = data.shape[1]
-        random_client_index = np.random.randint(0, num_clients) # Select a random index as the chosen client
+        random_client_indices = np.random.choice(num_clients, args.sensitivity_num, replace=False) # Select 'args.sensitivity_num' random indices as the chosen clients
         
-        random_client_data = data[:, random_client_index] # Select the corresponding column of the random client
-        min_value = np.min(random_client_data)
-        max_value = np.max(random_client_data)
-        random_client_data = np.random.uniform(min_value, max_value, size=data.shape[0]) # Modify the column values with random values in a uniform distribution
+        for random_client_index in random_client_indices:
+            random_client_data = data[:, random_client_index] # Select the corresponding column of the random client
+            min_value = np.min(random_client_data)
+            max_value = np.max(random_client_data)
+            random_client_data = np.random.uniform(min_value, max_value, size=data.shape[0]) # Modify the column values with random values in a uniform distribution
+            #print("Modified column: ", random_client_data)
+            
+            data[:, random_client_index] = random_client_data # Update the new column in 'data'
 
-        data[:, random_client_index] = random_client_data # Update the new column in 'data'
-
-        print("Modified client: ", random_client_index)
-        #print("Modified column: ", random_client_data)
+        print("Modified clients: ", random_client_indices)
+        
 
         # Create the train, validation and test sets with the new data
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.sensitivity, data, args.normalize)
