@@ -154,6 +154,8 @@ def main_training(Data):
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=False)
     model = model.to(device)
 
+    variances = []
+
     print(args)
     print('The recpetive field size is', model.receptive_field)
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -190,6 +192,10 @@ def main_training(Data):
                     torch.save(model, f)
                 best_val = val_loss
             
+            # Prediction's variance calculation during validation
+            variance_val = np.var(val_predict, axis=0)
+            variances.append(variance_val)
+
             # To save the adjacency matrix in a file
             if model.adjacency_matrix is not None:
                 np.save('learned_adjacency_matrix.npy', model.adjacency_matrix.cpu().detach().numpy())
@@ -225,6 +231,10 @@ def main_training(Data):
     # Load the best saved model.
     with open(args.save, 'rb') as f:
         model = torch.load(f)
+
+    # Save the variances in a CSV file.
+    variances = np.array(variances)
+    np.savetxt('variances.csv', variances, delimiter=',')
 
     # Evaluate both sets with the best saved model.
     vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
