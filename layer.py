@@ -190,7 +190,7 @@ class graph_constructor(nn.Module):
         # Create weighted adjacency matrix
         adj_weighted = torch.zeros_like(adj)
         adj_weighted.scatter_(1, t1, s1)
-        return adj
+        return adj_weighted
 
     def fullA(self, idx):
         if self.static_feat is None:
