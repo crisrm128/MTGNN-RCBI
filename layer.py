@@ -191,7 +191,6 @@ class graph_constructor(nn.Module):
         print("s1: ", s1)
         adj_weighted = torch.zeros_like(adj)
         adj_weighted.scatter_(1, t1, s1)
-        print(adj_weighted)
         return adj_weighted
 
     def fullA(self, idx):

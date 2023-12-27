@@ -105,6 +105,7 @@ class gtnet(nn.Module):
             else:
                 adp = self.predefined_A
             self.adjacency_matrix = adp  # Save the learned adjacency matrix
+            print("adp: ", adp)
 
         x = self.start_conv(input) #Input module
         skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
