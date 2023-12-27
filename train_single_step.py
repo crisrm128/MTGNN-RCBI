@@ -193,9 +193,8 @@ def main_training(Data):
                 best_val = val_loss
             
             # Prediction's variance calculation during validation
-            print('val_predict: ', val_predict.shape)
             variance_val = np.var(val_predict)
-            print('variance_val: ', variance_val)
+            # print('variance_val: ', variance_val)
             variances.append(variance_val)
 
             # To save the adjacency matrix in a file
