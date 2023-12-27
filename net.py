@@ -105,7 +105,9 @@ class gtnet(nn.Module):
             else:
                 adp = self.predefined_A
             self.adjacency_matrix = adp  # Save the learned adjacency matrix
-            print("adp: ", adp)
+            unique_values, unique_indices = torch.unique(adp, return_inverse=True)
+            # Imprime los valores únicos
+            print("Valores únicos:", unique_values)
 
         x = self.start_conv(input) #Input module
         skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
