@@ -188,7 +188,6 @@ class graph_constructor(nn.Module):
         # mask.scatter_(1,t1,s1.fill_(1))
         # adj = adj*mask
         # Create weighted adjacency matrix
-        print("s1: ", s1)
         adj_weighted = torch.zeros_like(adj)
         adj_weighted.scatter_(1, t1, s1)
         return adj_weighted
