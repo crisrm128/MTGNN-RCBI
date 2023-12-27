@@ -200,7 +200,9 @@ def main_training(Data):
 
             # To save the adjacency matrix in a file
             if model.adjacency_matrix is not None:
-                np.savetxt('learned_adjacency_matrix.txt', model.adjacency_matrix.cpu().detach().numpy())
+                print("Guardando matriz de adyacencia...")
+                print(model.adjacency_matrix)
+                np.savetxt("adjacency_matrix.txt", model.adjacency_matrix.cpu().detach().numpy())
 
             if epoch % 3 == 0: # Changed from 5 to 3
                 # Monitoring purposes
