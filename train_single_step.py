@@ -199,9 +199,7 @@ def main_training(Data):
 
             # To save the adjacency matrix in a file
             if model.adjacency_matrix is not None:
-                print("Guardando matriz de adyacencia...")
-                print(model.adjacency_matrix)
-                np.savetxt("adjacency_matrix.txt", model.adjacency_matrix.cpu().detach().numpy())
+                np.save("adjacency_matrix.npy", model.adjacency_matrix.cpu().detach().numpy())
 
             if epoch % 3 == 0: # Changed from 5 to 3
                 # Monitoring purposes
@@ -226,7 +224,6 @@ def main_training(Data):
                 # Save the variances in a CSV file.
                 variances = np.array(variances)
                 np.savetxt('variances.csv', variances, delimiter=',')
-
                 
                 print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
                 #print('Test predictions: ', test_predict)
