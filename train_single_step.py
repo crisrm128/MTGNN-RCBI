@@ -195,7 +195,7 @@ def main_training(Data):
             # Prediction's variance calculation during validation
             print('val_predict: ', val_predict.shape)
             variance_val = np.var(val_predict)
-            print('variance_val: ', variance_val.shape)
+            print('variance_val: ', variance_val)
             variances.append(variance_val)
 
             # To save the adjacency matrix in a file
@@ -221,6 +221,11 @@ def main_training(Data):
                     output_file = "predict_confinterv_result.csv"
                 output_format = '%.3f'
                 np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
+
+                # Save the variances in a CSV file.
+                variances = np.array(variances)
+                np.savetxt('variances.csv', variances, delimiter=',')
+
                 
                 print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
                 #print('Test predictions: ', test_predict)
@@ -233,11 +238,7 @@ def main_training(Data):
     # Load the best saved model.
     with open(args.save, 'rb') as f:
         model = torch.load(f)
-
-    # Save the variances in a CSV file.
-    variances = np.array(variances)
-    np.savetxt('variances.csv', variances, delimiter=',')
-
+    
     # Evaluate both sets with the best saved model.
     vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
                                         args.batch_size)
