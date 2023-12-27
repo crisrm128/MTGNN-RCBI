@@ -255,6 +255,7 @@ def main():
         random_client_indices = np.random.choice(num_clients, args.sensitivity_num, replace=False) # Select 'args.sensitivity_num' random indices as the chosen clients
         
         for random_client_index in random_client_indices:
+            random_client_index = 125
             random_client_data = data[:, random_client_index] # Select the corresponding column of the random client
             min_value = np.min(random_client_data)
             max_value = np.max(random_client_data)
