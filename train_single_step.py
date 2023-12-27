@@ -193,6 +193,7 @@ def main_training(Data):
                 best_val = val_loss
             
             # Prediction's variance calculation during validation
+            print('val_predict: ', val_predict.shape)
             variance_val = np.var(val_predict, axis=0)
             variances.append(variance_val)
 
