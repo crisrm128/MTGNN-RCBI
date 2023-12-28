@@ -181,15 +181,45 @@ class graph_constructor(nn.Module):
         nodevec2 = torch.tanh(self.alpha*self.lin2(nodevec2))
 
         a = torch.mm(nodevec1, nodevec2.transpose(1,0))-torch.mm(nodevec2, nodevec1.transpose(1,0))
-        adj = F.relu(torch.tanh(self.alpha*a))
-        mask = torch.zeros(idx.size(0), idx.size(0)).to(self.device)
-        mask.fill_(float('0'))
-        s1,t1 = (adj + torch.rand_like(adj)*0.01).topk(self.k,1)
-        mask.scatter_(1,t1,s1.fill_(1))
-        adj = adj*mask
+        threshold = 0.1
+        adj = F.relu(torch.tanh(self.alpha*a)) + threshold
+
+        #print("adj original:\n", adj)
+
+        # mask = torch.zeros(idx.size(0), idx.size(0)).to(self.device)
+        # mask.fill_(float('0'))
+
+        # Enmascarar los ceros para que no contribuyan
+        # mask = adj > 0
+        # adj_no_zeros = adj * mask
+
+        # print("Mascara:\n", adj_no_zeros)
+        # print(adj_no_zeros.shape)
+        
+        #s1,t1 = (adj + torch.rand_like(adj)*0.01).topk(self.k,1)
+        # Utilizar s1 como pesos solo para las conexiones existentes
+        # s1, t1 = (adj_no_zeros + torch.rand_like(adj_no_zeros) * 0.01).topk(self.k, 1)
+        
+        # mask.scatter_(1,t1,s1.fill_(1))
+        # adj = adj*mask
+
+        # Crear la matriz de adyacencia ponderada
+        #nnodes = adj.size(0)
+        #adj_weighted = torch.zeros(nnodes, nnodes)
+        # adj_weighted = adj.clone()
+        # adj_weighted.scatter_(1, t1, s1)
+
+
+        # Opcional: Sumar la matriz ponderada con la matriz original para mantener las conexiones no modificadas
+        #adj_weighted += adj
+        
         # Create weighted adjacency matrix
         # adj_weighted = torch.zeros_like(adj)
         # adj_weighted.scatter_(1, t1, s1)
+
+        # adj = adj / torch.sum(adj, dim=1, keepdim=True)
+        
+        #print("Matriz de adyacencia normalizada:\n", adj)
         return adj
 
     def fullA(self, idx):
