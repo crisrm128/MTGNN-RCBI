@@ -1,9 +1,9 @@
 # MTGNN-RCBI
-Se quiere optar a la mejora del trabajo.
-
-This is an adaptation of the PyTorch implementation of the paper: [Connecting the Dots: Multivariate Time Series Forecasting with Graph Neural Networks](https://arxiv.org/abs/2005.11650), published in KDD-2020, but adding the uncertainty estimation using Bootstrap frequentist and Sensitivity Analysis with confidence intervals.
+This is an adaptation of the PyTorch implementation of the paper: [Connecting the Dots: Multivariate Time Series Forecasting with Graph Neural Networks](https://arxiv.org/abs/2005.11650), published in KDD-2020, but adding the uncertainty estimation using Bootstrap frequentist and Sensitivity Analysis with confidence intervals, also with Variance Calculation.
 
 The Bayesian Network implementation, as well as the k-fold Cross Validation, don't work properly as they don't come to a solution, so it is not recommended to use them.
+
+In the ```forward``` method inside the ```graph_constructor``` class defined in ```layer.py```, there are different adjacency matrix calculation approaches, as it was modified to study a potential weak point of the model.
 
 ## Requirements
 The model is implemented using Python3 with dependencies specified in requirements.txt
