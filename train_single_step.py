@@ -11,7 +11,7 @@ import importlib
 from util import *
 from trainer import Optim
 
-np.random.seed(42)
+np.random.seed(42) # To allow reproducibility
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     model.eval()
@@ -53,7 +53,7 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     index = (sigma_g != 0)
     correlation = ((predict - mean_p) * (Ytest - mean_g)).mean(axis=0) / (sigma_p * sigma_g)
     correlation = (correlation[index]).mean()
-    return rse, rae, correlation, predict
+    return rse, rae, correlation, predict # Modified to return the predicted values
 
 
 def train(data, X, Y, model, criterion, optim, batch_size):
@@ -92,7 +92,7 @@ def train(data, X, Y, model, criterion, optim, batch_size):
         iter += 1
     return total_loss / n_samples
 
-# Input arguments
+# Input arguments ----------------------------------------------------------------------------------------------------
 parser = argparse.ArgumentParser(description='PyTorch Time series forecasting')
 parser.add_argument('--data', type=str, default='./data/solar_AL.txt',
                     help='location of the data file')
@@ -135,6 +135,7 @@ parser.add_argument('--epochs',type=int,default=1,help='')
 parser.add_argument('--num_split',type=int,default=1,help='number of splits for graphs')
 parser.add_argument('--step_size',type=int,default=100,help='step_size')
 
+# New ones added for setting the number of experiments and allowing the sensitivity analysis
 parser.add_argument('--exp_num',type=int, default=3, help='number of runs/experiments')
 parser.add_argument('--sensitivity', type=bool, default=False, help='usage of sensitivity analysis')
 parser.add_argument('--sensitivity_num', type=int, default=1, help='number of variables used for sensitivity analysis')
@@ -142,6 +143,8 @@ parser.add_argument('--sensitivity_num', type=int, default=1, help='number of va
 args = parser.parse_args()
 device = torch.device(args.device)
 torch.set_num_threads(3)
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Function that performs the original training within the main function. Now adjusted for the sensitivity analysis.
 def main_training(Data):
@@ -154,7 +157,7 @@ def main_training(Data):
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=False)
     model = model.to(device)
 
-    variances = []
+    variances = [] # List to store the variance calculated in each epoch
 
     print(args)
     print('The recpetive field size is', model.receptive_field)
@@ -185,8 +188,8 @@ def main_training(Data):
             print(
                 '| end of epoch {:3d} | time: {:5.2f}s | train_loss {:5.4f} | valid rse {:5.4f} | valid rae {:5.4f} | valid corr  {:5.4f}'.format(
                     epoch, (time.time() - epoch_start_time), train_loss, val_loss, val_rae, val_corr), flush=True)
+            
             # Save the model if the validation loss is the best we've seen so far.
-
             if val_loss < best_val:
                 with open(args.save, 'wb') as f:
                     torch.save(model, f)
@@ -208,12 +211,14 @@ def main_training(Data):
                 
                 test_predict = test_predict * Data.scale.cpu().numpy() # Rescale from normalizing
                 
+                # Compute the confidence intervals for the predictions
                 confidence_interval = np.percentile(test_predict, [5, 95], axis=0)
                 interval_differences = confidence_interval[1] - confidence_interval[0]
                 confidence_interval = np.vstack([confidence_interval, interval_differences])
                 average_interval_size = np.mean(interval_differences)
                 print("Average size for confidence intervals:", average_interval_size)
 
+                # Save the results in a CSV file determined by the approach
                 if args.sensitivity:
                     output_file = "predict_confinterv_result_sensitivity.csv"
                 else:
@@ -221,23 +226,21 @@ def main_training(Data):
                 output_format = '%.3f'
                 np.savetxt(output_file, confidence_interval, delimiter=',', fmt=output_format)
 
-                # Save the variances in a CSV file.
+                # Save the variances in a CSV file
                 variances = np.array(variances)
                 np.savetxt('variances.csv', variances, delimiter=',')
                 
                 print("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr), flush=True)
-                #print('Test predictions: ', test_predict)
-                #print('Test predictions shape: ', test_predict.shape)
 
     except KeyboardInterrupt:
         print('-' * 89)
         print('Exiting from training early')
 
-    # Load the best saved model.
+    # Load the best saved model
     with open(args.save, 'rb') as f:
         model = torch.load(f)
     
-    # Evaluate both sets with the best saved model.
+    # Evaluate both sets with the best saved model
     vtest_acc, vtest_rae, vtest_corr, vtest_predict = evaluate(Data, Data.valid[0], Data.valid[1], model, evaluateL2, evaluateL1,
                                         args.batch_size)
     test_acc, test_rae, test_corr, test_predict = evaluate(Data, Data.test[0], Data.test[1], model, evaluateL2, evaluateL1,
@@ -248,9 +251,11 @@ def main_training(Data):
 def main():
 
     if args.sensitivity:
-        fin = open(args.data)
-        data = np.loadtxt(fin, delimiter=',')
+        # Load the data
+        file = open(args.data)
+        data = np.loadtxt(file, delimiter=',')
 
+        # Select a determined number of random clients to modify
         num_clients = data.shape[1]
         random_client_indices = np.random.choice(num_clients, args.sensitivity_num, replace=False) # Select 'args.sensitivity_num' random indices as the chosen clients
 
@@ -264,7 +269,6 @@ def main():
             data[:, random_client_index] = random_client_data # Update the new column in 'data'
 
         print("Modified clients: ", random_client_indices)
-        
 
         # Create the train, validation and test sets with the new data
         Data = DataLoaderS(args.data, 0.6, 0.2, device, args.horizon, args.seq_in_len, args.sensitivity, data, args.normalize)
@@ -284,7 +288,7 @@ if __name__ == "__main__":
     acc = []
     rae = []
     corr = []
-    for i in range(args.exp_num):
+    for i in range(args.exp_num): # Changed to allow different number of experiments
         val_acc, val_rae, val_corr, test_acc, test_rae, test_corr = main()
         vacc.append(val_acc)
         vrae.append(val_rae)
@@ -293,7 +297,7 @@ if __name__ == "__main__":
         rae.append(test_rae)
         corr.append(test_corr)
     print('\n\n')
-    print(f'{args.exp_num} runs average')
+    print(f'{args.exp_num} runs average') # Changed to allow different number of experiments
     print('\n\n')
     print("valid\trse\trae\tcorr")
     print("mean\t{:5.4f}\t{:5.4f}\t{:5.4f}".format(np.mean(vacc), np.mean(vrae), np.mean(vcorr)))

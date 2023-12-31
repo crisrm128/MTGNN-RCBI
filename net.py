@@ -18,7 +18,7 @@ class gtnet(nn.Module):
         self.norm = nn.ModuleList()
         self.start_conv = nn.Conv2d(in_channels=in_dim,
                                     out_channels=residual_channels,
-                                    kernel_size=(1, 1)) #Convolucion 1D para adecuar las dimensiones
+                                    kernel_size=(1, 1)) # 1D Convolution to adequate dimensions
         self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat) #Graph learning layer
         self.adjacency_matrix = None  # Variable to store the adjacency matrix
 
